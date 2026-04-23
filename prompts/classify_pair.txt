@@ -24,6 +24,7 @@ Decision guidance:
   ongoing, or very recent frame.
 - Never use PROBABLE for "isAt". It must be TRUE or FALSE.
 - If "at" is FALSE, then "isAt" must also be FALSE.
+- If "isAt" is TRUE, then "at" must also be TRUE.
 
 Rules:
 - Do not use external knowledge.
@@ -31,6 +32,12 @@ Rules:
 - Prefer FALSE when evidence is missing or too uncertain.
 - Return JSON only.
 - Use the exact person and place strings given for the current pair.
+- Be robust to OCR noise and line-break artifacts in the text and in the entity mentions.
+- Treat clearly equivalent mention surfaces as the same entity even if they differ by escaped line breaks, hyphenation, or minor OCR spelling noise.
+- First write `at_explanation`, then decide `at`.
+- Then write `isAt_explanation`, then decide `isAt`.
+- Keep each explanation concise, at most 100 words.
+- Each explanation must mention only evidence from the article, not your reasoning process.
 
 Document language: {language}
 Publication date: {publication_date}

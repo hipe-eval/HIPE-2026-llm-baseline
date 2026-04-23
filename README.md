@@ -76,9 +76,10 @@ Participants can extend it with few-shot prompting, sentence selection, retrieva
 │   └── model.example.json
 ├── HIPE-2026-data/
 ├── models/
-├── outputs/
+├── results.d/
 ├── scripts/
 │   ├── evaluate_predictions.py
+│   ├── compare_predictions.py
 │   └── run_baseline.py
 ├── prompts/
 │   └── classify_pair.txt
@@ -126,7 +127,7 @@ Project conventions:
 
 - use the cloned `HIPE-2026-data/` repo directly
 - let Hugging Face cache GGUF files under project-local `./hf.d/` by default
-- write predictions and debug traces under `outputs/`
+- write predictions, debug traces, and diagnostics under `results.d/`
 - keep optional model defaults in `configs/`
 
 Design choices:
@@ -161,6 +162,27 @@ To run the baseline on the main English, German, and French files in sequence:
 remake run-all-languages
 ```
 
+To run the full train workflow in one command:
+
+```bash
+remake world
+```
+
+This runs:
+
+- the baselines for English, German, and French
+- the official evaluation on those outputs
+- the merged diagnostic JSON export
+
+Once the official test files are released, you can run the baseline on the test split with:
+
+```bash
+remake world-test
+```
+
+`world-test` runs only the baselines and writes test predictions and debug traces under
+`results.d/`. It does not try to evaluate or diagnose the test split by default.
+
 The prediction files are Make targets. If an output file already exists, `remake`
 will not rebuild it. Use `remake clean` or delete the specific output file to force
 another run.
@@ -170,8 +192,8 @@ You can still override the defaults:
 ```bash
 remake run-baseline \
   INPUT_JSONL=HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-de.jsonl \
-  OUTPUT_JSONL=outputs/predictions.de.jsonl \
-  DEBUG_JSONL=outputs/debug.de.jsonl
+  OUTPUT_JSONL=results.d/predictions.de.jsonl \
+  DEBUG_JSONL=results.d/debug.de.jsonl
 ```
 
 Or use a local GGUF explicitly:
@@ -187,7 +209,7 @@ JSON config file for model, prompt, and decoding defaults:
 python scripts/run_baseline.py \
   --config configs/model.example.json \
   --input-jsonl HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-en.jsonl \
-  --output-jsonl outputs/predictions.en.jsonl
+  --output-jsonl results.d/predictions.en.jsonl
 ```
 
 CLI flags override config values, so the simplest pattern is:
@@ -201,8 +223,8 @@ Direct CLI usage with Hugging Face also works:
 HF_HOME=./hf.d \
 python scripts/run_baseline.py \
   --input-jsonl HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-en.jsonl \
-  --output-jsonl outputs/predictions.en.jsonl \
-  --debug-jsonl outputs/debug.en.jsonl \
+  --output-jsonl results.d/predictions.en.jsonl \
+  --debug-jsonl results.d/debug.en.jsonl \
   --hf-repo mistralai/Ministral-3-3B-Instruct-2512-GGUF \
   --hf-filename Ministral-3-3B-Instruct-2512-Q4_K_M.gguf
 ```
@@ -215,15 +237,38 @@ If you have a local checkout of the official HIPE 2026 data repo, use the helper
 remake evaluate-baseline
 ```
 
+The evaluation wrapper prints both the official HIPE metrics and a per-label confusion
+matrix for `at` and `isAt`.
+
 To evaluate the main English, German, and French outputs in sequence:
 
 ```bash
 remake evaluate-all-languages
 ```
 
+To build a merged diagnostic JSON with gold labels, system labels, explanations, and
+correctness flags:
+
+```bash
+remake diagnose-baseline
+```
+
+To build the same diagnostic files for English, German, and French in sequence:
+
+```bash
+remake diagnose-all-languages
+```
+
+The diagnostic JSON keeps the document structure and adds, for each sampled pair:
+
+- the gold `at` and `isAt` labels
+- the system `SYS_at` and `SYS_isAt` labels
+- `CORRECT_at`, `CORRECT_isAt`, and overall `CORRECT`
+- separate system explanations for `at` and `isAt`
+
 By default this evaluates:
 
-- `OUTPUT_JSONL=outputs/predictions.en.jsonl`
+- `OUTPUT_JSONL=results.d/predictions.en.jsonl`
 - `GOLD_JSONL=$(INPUT_JSONL)`
 - `SCORER_SCRIPT=HIPE-2026-data/scripts/file_scorer_evaluation.py`
 - `SCHEMA_FILE=HIPE-2026-data/schemas/hipe-2026-data.schema.json`
@@ -232,7 +277,7 @@ You can override them inline, for example:
 
 ```bash
 remake evaluate-baseline \
-  OUTPUT_JSONL=outputs/predictions.de.jsonl \
+  OUTPUT_JSONL=results.d/predictions.de.jsonl \
   GOLD_JSONL=HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-de.jsonl
 ```
 
@@ -257,3 +302,6 @@ Common modifications:
 4. Change the fallback labels in `conservative_default_prediction()` inside `src/hipe2026_mistral_baseline/validation.py`.
 
 If you want to add few-shot examples, the simplest path is to edit the prompt template directly.
+
+The current baseline also tolerates some OCR noise in entity-mention matching, including
+escaped line breaks and small OCR-style surface variants.

@@ -8,9 +8,14 @@ import json
 from dataclasses import dataclass
 import logging
 from pathlib import Path
+import math
 import sys
 
-from .export import write_debug_jsonl, write_submission_jsonl
+from .export import (
+    append_debug_jsonl_record,
+    initialize_debug_jsonl,
+    write_submission_jsonl,
+)
 from .inference import (
     DEFAULT_MODEL_NAME,
     GenerationConfig,
@@ -46,14 +51,21 @@ class TraceRecord:
     prompt: str
     raw_output: str
     at: str
+    at_explanation: str | None
     is_at: str
+    is_at_explanation: str | None
     used_default: bool
     error: str | None
+    prompt_tokens: int | None
     completion_tokens: int | None
     elapsed_seconds: float | None
+    input_tokens_per_second: float | None
     output_tokens_per_second: float | None
 
     def to_dict(self) -> dict[str, object]:
+        total_tokens = None
+        if self.prompt_tokens is not None and self.completion_tokens is not None:
+            total_tokens = self.prompt_tokens + self.completion_tokens
         return {
             "document_id": self.document_id,
             "pers_entity_id": self.pers_entity_id,
@@ -61,11 +73,16 @@ class TraceRecord:
             "prompt": self.prompt,
             "raw_output": self.raw_output,
             "at": self.at,
+            "at_explanation": self.at_explanation,
             "isAt": self.is_at,
+            "isAt_explanation": self.is_at_explanation,
             "used_default": self.used_default,
             "error": self.error,
+            "prompt_tokens": self.prompt_tokens,
             "completion_tokens": self.completion_tokens,
+            "total_tokens": total_tokens,
             "elapsed_seconds": self.elapsed_seconds,
+            "input_tokens_per_second": self.input_tokens_per_second,
             "output_tokens_per_second": self.output_tokens_per_second,
         }
 
@@ -89,13 +106,17 @@ def predict_pair(
     generation_result = runner.generate(prompt)
     if isinstance(generation_result, GenerationResult):
         raw_output = generation_result.text
+        prompt_tokens = generation_result.prompt_tokens
         completion_tokens = generation_result.completion_tokens
         elapsed_seconds = generation_result.elapsed_seconds
+        input_tokens_per_second = generation_result.input_tokens_per_second
         output_tokens_per_second = generation_result.output_tokens_per_second
     else:
         raw_output = str(generation_result)
+        prompt_tokens = None
         completion_tokens = None
         elapsed_seconds = None
+        input_tokens_per_second = None
         output_tokens_per_second = None
     used_default = False
     error: str | None = None
@@ -115,11 +136,15 @@ def predict_pair(
         prompt=prompt,
         raw_output=raw_output,
         at=validated.at,
+        at_explanation=validated.at_explanation,
         is_at=validated.is_at,
+        is_at_explanation=validated.is_at_explanation,
         used_default=used_default,
         error=error,
+        prompt_tokens=prompt_tokens,
         completion_tokens=completion_tokens,
         elapsed_seconds=elapsed_seconds,
+        input_tokens_per_second=input_tokens_per_second,
         output_tokens_per_second=output_tokens_per_second,
     ).to_dict()
     return updated_pair, trace_record
@@ -130,6 +155,7 @@ def run_documents(
     *,
     runner,
     prompt_template: str,
+    debug_jsonl: str | Path | None = None,
 ) -> tuple[list[HipeDocument], list[dict[str, object]]]:
     """Run the full baseline over a list of documents.
 
@@ -153,8 +179,10 @@ def run_documents(
                 document_index=index,
                 total_documents=total_documents,
                 document_id=document.document_id,
+                document_char_count=len(document.text),
                 pair_index=0,
                 total_pairs=0,
+                input_tokens_per_second=None,
                 output_tokens_per_second=None,
                 final=True,
             )
@@ -167,12 +195,16 @@ def run_documents(
             )
             predicted_pairs.append(predicted_pair)
             trace_records.append(trace_record)
+            if debug_jsonl is not None:
+                append_debug_jsonl_record(trace_record, debug_jsonl)
             _emit_pair_progress(
                 document_index=index,
                 total_documents=total_documents,
                 document_id=document.document_id,
+                document_char_count=len(document.text),
                 pair_index=pair_index,
                 total_pairs=total_pairs,
+                input_tokens_per_second=trace_record.get("input_tokens_per_second"),
                 output_tokens_per_second=trace_record.get("output_tokens_per_second"),
                 final=pair_index == total_pairs,
             )
@@ -298,8 +330,10 @@ def _emit_pair_progress(
     document_index: int,
     total_documents: int,
     document_id: str,
+    document_char_count: int,
     pair_index: int,
     total_pairs: int,
+    input_tokens_per_second: float | None,
     output_tokens_per_second: float | None,
     final: bool,
 ) -> None:
@@ -309,8 +343,10 @@ def _emit_pair_progress(
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     message = (
         f"{timestamp} Document {document_index}/{total_documents}: {document_id} "
-        f"({pair_index}/{total_pairs} sampled pairs"
+        f"{document_char_count} chars ({pair_index}/{total_pairs} pairs"
     )
+    if input_tokens_per_second is not None:
+        message += f", {input_tokens_per_second:.1f} in tok/s"
     if output_tokens_per_second is not None:
         message += f", {output_tokens_per_second:.1f} out tok/s"
     message += ")"
@@ -319,6 +355,57 @@ def _emit_pair_progress(
     else:
         sys.stderr.write(f"\r{message}")
     sys.stderr.flush()
+
+
+def _nearest_rank_percentile(values: list[int], percentile: float) -> int:
+    if not values:
+        raise ValueError("values must not be empty")
+    sorted_values = sorted(values)
+    rank = max(1, math.ceil((percentile / 100.0) * len(sorted_values)))
+    return sorted_values[rank - 1]
+
+
+def _format_token_summary(values: list[int]) -> str:
+    average = sum(values) / len(values)
+    return (
+        f"min={min(values)} avg={average:.1f} "
+        f"p50={_nearest_rank_percentile(values, 50)} "
+        f"p95={_nearest_rank_percentile(values, 95)} "
+        f"max={max(values)}"
+    )
+
+
+def _log_context_usage_summary(
+    trace_records: list[dict[str, object]],
+    *,
+    n_ctx: int,
+) -> None:
+    prompt_tokens = [
+        int(value)
+        for record in trace_records
+        for value in [record.get("prompt_tokens")]
+        if isinstance(value, int)
+    ]
+    total_tokens = [
+        int(value)
+        for record in trace_records
+        for value in [record.get("total_tokens")]
+        if isinstance(value, int)
+    ]
+
+    if prompt_tokens:
+        LOGGER.info(
+            "Context usage prompt_tokens: %s",
+            _format_token_summary(prompt_tokens),
+        )
+    if total_tokens:
+        max_total_tokens = max(total_tokens)
+        LOGGER.info(
+            "Context usage total_tokens: %s n_ctx=%s max_utilization=%.1f%%",
+            _format_token_summary(total_tokens),
+            n_ctx,
+            (100.0 * max_total_tokens / n_ctx) if n_ctx > 0 else 0.0,
+        )
 
 
 def _resolve_existing_file(path_string: str, *, description: str) -> Path:
@@ -407,15 +494,17 @@ def main() -> None:
         )
     LOGGER.info("Resolved model path: %s", model_path)
     runner = LlamaCppRunner(model_path=model_path, config=config)
+    if debug_jsonl:
+        initialize_debug_jsonl(debug_jsonl)
 
     predicted_documents, debug_records = run_documents(
         documents,
         runner=runner,
         prompt_template=prompt_template,
+        debug_jsonl=debug_jsonl,
     )
+    _log_context_usage_summary(debug_records, n_ctx=config.n_ctx)
     write_submission_jsonl(predicted_documents, output_jsonl)
-    if debug_jsonl:
-        write_debug_jsonl(debug_records, debug_jsonl)
     LOGGER.info("Wrote predictions to %s", output_jsonl)
     if debug_jsonl:
         LOGGER.info("Wrote debug trace to %s", debug_jsonl)

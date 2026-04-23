@@ -29,15 +29,18 @@ def _build_pair_context(task: PairTask) -> str:
         f"Place entity id: {pair.loc_entity_id}\n"
         f"Place wikidata QID: {pair.loc_wikidata_qid or 'null'}\n"
         f"Place mentions: {_format_mentions(pair.loc_mentions_list)}\n\n"
-        "Return exactly this JSON shape:\n"
+        "Return exactly this JSON shape, in this field order:\n"
         "{\n"
         f'  "person": "{pair.person_value}",\n'
         f'  "place": "{pair.place_value}",\n'
+        '  "at_explanation": "concise text-grounded explanation, max 100 words",\n'
         '  "at": "TRUE|PROBABLE|FALSE",\n'
-        '  "isAt": "TRUE|FALSE",\n'
-        '  "evidence": "short extractive or paraphrased justification"\n'
+        '  "isAt_explanation": "concise text-grounded explanation, max 100 words",\n'
+        '  "isAt": "TRUE|FALSE"\n'
         "}\n"
     )
+
+
 def build_prompt(task: PairTask, template: str) -> str:
     pair = task.pair
     return template.format(

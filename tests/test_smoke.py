@@ -17,8 +17,8 @@ FIXTURE_PATH = Path(__file__).resolve().parent / "fixtures" / "sample_input.json
 class FakeRunner:
     def __init__(self) -> None:
         self._responses = {
-            "Nastassia Kinski": '{"person":"Nastassia Kinski","place":"Geneva","at":"TRUE","isAt":"FALSE","evidence":"The text says she stayed in Geneva last year."}',
-            "Rudolf Koller": '{"person":"Rudolf Koller","place":"Zurich","at":"TRUE","isAt":"TRUE","evidence":"The text says he works and lives there."}',
+            "Nastassia Kinski": '{"person":"Nastassia Kinski","place":"Geneva","at_explanation":"The text says she stayed in Geneva last year.","at":"TRUE","isAt_explanation":"The text does not place her there now.","isAt":"FALSE"}',
+            "Rudolf Koller": '{"person":"Rudolf Koller","place":"Zurich","at_explanation":"The text says he works and lives there.","at":"TRUE","isAt_explanation":"The text says he works and lives there now.","isAt":"TRUE"}',
             "Victor Hugo": 'not valid json',
         }
 
@@ -42,7 +42,7 @@ class TestSmokePipeline(unittest.TestCase):
                     "Person mentions: {person_mentions}\n"
                     "Place mentions: {place_mentions}\n"
                     "Text: {article_text}\n"
-                    'Return {{"person":"{person_value}","place":"{place_value}","at":"","isAt":"","evidence":""}}'
+                    'Return {{"person":"{person_value}","place":"{place_value}","at_explanation":"","at":"","isAt_explanation":"","isAt":""}}'
                 ),
             )
 

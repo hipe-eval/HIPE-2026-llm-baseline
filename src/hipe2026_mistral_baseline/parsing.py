@@ -15,9 +15,10 @@ class ParseError(ValueError):
 class ParsedPrediction:
     person: str
     place: str
+    at_explanation: str | None
     at: str
+    is_at_explanation: str | None
     is_at: str
-    evidence: str | None
 
 
 _TRAILING_COMMA_RE = re.compile(r",(\s*[}\]])")
@@ -89,9 +90,10 @@ def parse_model_response(raw_text: str) -> ParsedPrediction:
 
     person = payload["person"]
     place = payload["place"]
+    at_explanation = payload.get("at_explanation")
     at = payload["at"]
+    is_at_explanation = payload.get("isAt_explanation")
     is_at = payload["isAt"]
-    evidence = payload.get("evidence")
 
     if not isinstance(person, str) or not person.strip():
         raise ParseError("person must be a non-empty string")
@@ -101,13 +103,24 @@ def parse_model_response(raw_text: str) -> ParsedPrediction:
         raise ParseError("at must be a non-empty string")
     if not isinstance(is_at, str) or not is_at.strip():
         raise ParseError("isAt must be a non-empty string")
-    if evidence is not None and not isinstance(evidence, str):
-        raise ParseError("evidence must be a string or null")
+    if at_explanation is not None and not isinstance(at_explanation, str):
+        raise ParseError("at_explanation must be a string or null")
+    if is_at_explanation is not None and not isinstance(is_at_explanation, str):
+        raise ParseError("isAt_explanation must be a string or null")
 
     return ParsedPrediction(
         person=person.strip(),
         place=place.strip(),
+        at_explanation=(
+            at_explanation.strip()
+            if isinstance(at_explanation, str) and at_explanation.strip()
+            else None
+        ),
         at=at.strip().upper(),
+        is_at_explanation=(
+            is_at_explanation.strip()
+            if isinstance(is_at_explanation, str) and is_at_explanation.strip()
+            else None
+        ),
         is_at=is_at.strip().upper(),
-        evidence=evidence.strip() if isinstance(evidence, str) and evidence.strip() else None,
     )
