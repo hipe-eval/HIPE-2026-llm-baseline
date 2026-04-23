@@ -43,7 +43,7 @@ v0.1.0
 3. Run local verification.
 4. Merge to `main`.
 5. Create an annotated tag from the merged commit.
-6. Publish a GitHub release if needed.
+6. Optionally publish a GitHub release.
 
 ## Prepare the Release
 
@@ -188,7 +188,9 @@ Use the actual release version instead of `0.1.1`.
 
 ## GitHub Release
 
-If you publish a GitHub release, use:
+The tagged commit is the actual repository release snapshot.
+
+A GitHub release is optional. If you publish one, use:
 
 - tag: `vX.Y.Z`
 - title: `Release X.Y.Z`
@@ -199,6 +201,17 @@ The GitHub release should describe the same repository state as:
 - the git tag
 - `pyproject.toml`
 - `RELEASE.md`
+
+You can create the GitHub release either in the GitHub web UI or with the GitHub CLI.
+The `gh` tool is convenient, but it is not required by this process.
+
+Example with `gh`:
+
+```bash
+gh release create v0.1.1 --title "Release 0.1.1" --notes-file RELEASE.md
+```
+
+Use the actual release version instead of `0.1.1`.
 
 ## Hotfix Releases
 
