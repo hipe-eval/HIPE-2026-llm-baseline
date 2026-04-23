@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hipe2026-mistral-baseline"
+version = "0.1.0"
+description = "Minimal local prompt baseline for HIPE 2026 with llama-cpp-python."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "huggingface-hub>=0.30,<1",
+  "llama-cpp-python>=0.3.0,<1",
+  "pydantic>=2,<3",
+]
+
+[project.scripts]
+hipe2026-baseline = "hipe2026_mistral_baseline.run_baseline:main"
+hipe2026-evaluate = "hipe2026_mistral_baseline.scoring:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

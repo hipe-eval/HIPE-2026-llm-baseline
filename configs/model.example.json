@@ -1,0 +1,13 @@
+{
+  "model_name": "mistralai/Ministral-3-3B-Instruct-2512",
+  "model_path": "models/ministral-q4_k_m.gguf",
+  "prompt_file": "prompts/classify_pair.txt",
+  "temperature": 0.0,
+  "seed": 42,
+  "max_tokens": 256,
+  "top_p": 0.95,
+  "top_k": 40,
+  "repeat_penalty": 1.0,
+  "n_ctx": 8192,
+  "n_gpu_layers": 0
+}

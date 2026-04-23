@@ -1,0 +1,43 @@
+You are labeling one HIPE 2026 person-place pair from a multilingual historical document.
+
+Task:
+- Decide whether the document supports relation "at" for the person and place.
+- Decide whether the document supports relation "isAt" for the person and place.
+
+Relation definitions:
+- "at" means the document gives evidence that the person was at the place at some point before publication.
+- "isAt" means the document supports that the person was at the place in the immediate temporal context of the document, roughly within one month before publication.
+
+Allowed labels:
+- "at": TRUE, PROBABLE, FALSE
+- "isAt": TRUE, FALSE
+
+Rules:
+- Use only the document text and metadata provided here.
+- Do not invent facts not supported by the text.
+- Prefer FALSE when evidence is missing or ambiguous.
+- Return JSON only.
+- Use the exact person and place strings given below.
+
+Document language: {language}
+Publication date: {publication_date}
+
+Person entity id: {person_id}
+Person wikidata QID: {person_qid}
+Person mentions: {person_mentions}
+
+Place entity id: {place_id}
+Place wikidata QID: {place_qid}
+Place mentions: {place_mentions}
+
+Article text:
+{article_text}
+
+Return exactly this JSON shape:
+{{
+  "person": "{person_value}",
+  "place": "{place_value}",
+  "at": "TRUE|PROBABLE|FALSE",
+  "isAt": "TRUE|FALSE",
+  "evidence": "short extractive or paraphrased justification"
+}}
