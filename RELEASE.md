@@ -4,30 +4,60 @@ Initial research baseline release for HIPE 2026 person-place relation qualificat
 
 ## Included
 
-- local prompt-based baseline using `llama-cpp-python`
-- scorer-compatible reading and writing of the official HIPE 2026 JSONL format
-- pairwise classification over provided `sampled_pairs`
-- one prompt template with deterministic decoding defaults
-- strict JSON parsing, validation, and conservative fallback behavior
-- small test suite with fake inference for smoke testing
+- local zero-shot prompt baseline using `llama-cpp-python` with GGUF models
+- scorer-compatible reading and writing of the HIPE 2026 JSONL document format
+- pairwise prediction over provided `sampled_pairs`
+- one default prompt template with greedy decoding by default (`temperature=0.0`)
+- strict parsing and validation with conservative fallback behavior
+- `remake` targets for setup, baseline runs, evaluation, and diagnostics
+- tests including a smoke path with fake inference
 
-## Repository shape
+## Default Runtime Configuration
 
-- simple research-code layout
-- runnable default path without config
-- optional small JSON config for model and decoding defaults
-- thin wrapper for calling the official scorer from a local checkout
-
-## Current defaults
-
-- model family target: `mistralai/Ministral-3-3B-Instruct-2512`
+- recommended source model: `mistralai/Ministral-3-3B-Instruct-2512`
+- default Hugging Face repo: `mistralai/Ministral-3-3B-Instruct-2512-GGUF`
+- default GGUF filename: `Ministral-3-3B-Instruct-2512-Q4_K_M.gguf`
 - decoder: `llama-cpp-python`
-- labels:
+- on Apple Silicon macOS, the baseline will try to use Metal offload when the installed runtime supports GPU offload
+- default decoding settings include `temperature=0.0` and `flash_attn=True`
+- default Hugging Face cache path: `./hf.d`
+- default data checkout path: `HIPE-2026-data/`
+- default output paths: `results.d/predictions.{en,de,fr}.jsonl`, `results.d/debug.{en,de,fr}.jsonl`, `results.d/predictions.{en,de,fr}.diagnostic.json`
+- schema labels:
   - `at`: `TRUE`, `PROBABLE`, `FALSE`
   - `isAt`: `TRUE`, `FALSE`
 
+## Setup Requirements
+
+- Python 3.10 or later
+- Git for cloning `HIPE-2026-data`
+- Python dependencies from `pyproject.toml`: `huggingface-hub`, `llama-cpp-python`, `pydantic`
+- scorer dependencies from `HIPE-2026-data/requirements.txt`
+- recommended setup:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+remake setup
+```
+
+- `remake setup` creates `.env`, sets `HF_HOME=./hf.d`, installs the package, clones or updates `HIPE-2026-data/`, and installs scorer dependencies
+- model weights are not included; use the default Hugging Face GGUF or provide `--model-path` to a local GGUF file
+
+## Usage
+
+- default no-config run path after setup:
+
+```bash
+remake run-baseline
+remake evaluate-baseline
+remake run-all-languages
+remake world
+```
+
 ## Notes
 
-- this release follows the public HIPE 2026 schema based on document-level `sampled_pairs`
-- real model weights are not included in the repository
-- intended as a minimal starting point for participants to modify easily
+- this release follows the public HIPE 2026 document schema based on `sampled_pairs`
+- model files and the `HIPE-2026-data` repository are not vendored into this repository
+- intended as a minimal starting point for participants to extend
+- for reproducibility, report the exact GGUF repo, filename, and quantization used
