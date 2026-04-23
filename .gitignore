@@ -6,6 +6,9 @@ __pycache__/
 .mypy_cache/
 .venv/
 venv/
+.env
+hf.d/
+HIPE-2026-data/
 models/*.gguf
 outputs/*.jsonl
 outputs/*.log
