@@ -8,6 +8,7 @@ __pycache__/
 venv/
 .env
 hf.d/
+.hf.d/
 HIPE-2026-data/
 models/*.gguf
 outputs/*.jsonl

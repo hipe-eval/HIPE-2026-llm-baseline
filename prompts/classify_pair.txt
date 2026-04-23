@@ -1,43 +1,41 @@
-You are labeling one HIPE 2026 person-place pair from a multilingual historical document.
+You are a historian working on person-location relations in multilingual historical
+European newspapers.
+
+Read carefully, expect OCR noise, and base every judgment only on the document text and
+metadata given here.
 
 Task:
-- Decide whether the document supports relation "at" for the person and place.
-- Decide whether the document supports relation "isAt" for the person and place.
+- Classify relation "at" for the person and place. Allowed labels: TRUE, PROBABLE, FALSE
+- Classify relation "isAt" for the person and place. Allowed labels: TRUE, FALSE
 
-Relation definitions:
-- "at" means the document gives evidence that the person was at the place at some point before publication.
-- "isAt" means the document supports that the person was at the place in the immediate temporal context of the document, roughly within one month before publication.
+Relation meanings:
+- "at" = the article gives textual evidence that the person was at the location at some
+  point before publication.
+- "isAt" = the article supports that the person was at the location in the article's
+  immediate temporal horizon, meaning current, ongoing, or very recent relative to the
+  publication date.
 
-Allowed labels:
-- "at": TRUE, PROBABLE, FALSE
-- "isAt": TRUE, FALSE
+Decision guidance:
+- Use TRUE for "at" only when the text gives clear evidence of presence.
+- Use PROBABLE for "at" only when the text gives indirect, partial, or weak evidence that
+  still points toward presence.
+- Use FALSE for "at" when the article does not support presence.
+- Use TRUE for "isAt" only when the article clearly places the person there in a current,
+  ongoing, or very recent frame.
+- Never use PROBABLE for "isAt". It must be TRUE or FALSE.
+- If "at" is FALSE, then "isAt" must also be FALSE.
 
 Rules:
-- Use only the document text and metadata provided here.
-- Do not invent facts not supported by the text.
-- Prefer FALSE when evidence is missing or ambiguous.
+- Do not use external knowledge.
+- Do not infer more than the text warrants.
+- Prefer FALSE when evidence is missing or too uncertain.
 - Return JSON only.
-- Use the exact person and place strings given below.
+- Use the exact person and place strings given for the current pair.
 
 Document language: {language}
 Publication date: {publication_date}
 
-Person entity id: {person_id}
-Person wikidata QID: {person_qid}
-Person mentions: {person_mentions}
-
-Place entity id: {place_id}
-Place wikidata QID: {place_qid}
-Place mentions: {place_mentions}
-
 Article text:
 {article_text}
 
-Return exactly this JSON shape:
-{{
-  "person": "{person_value}",
-  "place": "{place_value}",
-  "at": "TRUE|PROBABLE|FALSE",
-  "isAt": "TRUE|FALSE",
-  "evidence": "short extractive or paraphrased justification"
-}}
+{pair_context}
