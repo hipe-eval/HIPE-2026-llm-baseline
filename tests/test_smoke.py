@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
@@ -31,16 +32,19 @@ class FakeRunner:
 class TestSmokePipeline(unittest.TestCase):
     def test_run_documents(self) -> None:
         documents = load_jsonl(FIXTURE_PATH)
-        output_documents, debug_records = run_documents(
-            documents,
-            runner=FakeRunner(),
-            prompt_template=(
-                "Person mentions: {person_mentions}\n"
-                "Place mentions: {place_mentions}\n"
-                "Text: {article_text}\n"
-                'Return {{"person":"{person_value}","place":"{place_value}","at":"","isAt":"","evidence":""}}'
-            ),
-        )
+        with patch(
+            "hipe2026_mistral_baseline.run_baseline.ENABLE_INLINE_PAIR_PROGRESS", False
+        ), patch("hipe2026_mistral_baseline.run_baseline.LOGGER.info"):
+            output_documents, debug_records = run_documents(
+                documents,
+                runner=FakeRunner(),
+                prompt_template=(
+                    "Person mentions: {person_mentions}\n"
+                    "Place mentions: {place_mentions}\n"
+                    "Text: {article_text}\n"
+                    'Return {{"person":"{person_value}","place":"{place_value}","at":"","isAt":"","evidence":""}}'
+                ),
+            )
 
         self.assertEqual(len(output_documents), 3)
         self.assertEqual(len(debug_records), 3)
