@@ -1,36 +1,37 @@
-# HIPE 2026 Mistral Baseline
+# HIPE-2026 Shared Task Baseline
 
-Minimal local baseline for the HIPE 2026 CLEF task on person-place relation qualification.
+Minimal local baseline for the [HIPE-2026 CLEF shared task](https://hipe-eval.github.io/HIPE-2026/) on **person-place relation qualification**.
 
-This repo is intentionally small and closer to research code than framework code.
+This repository is intentionally small and closer to research code than framework code.
 It is a zero-shot baseline: one prompt, no task-specific fine-tuning, and no few-shot examples by default.
 
 This baseline:
 
-- runs fully locally
-- is zero-shot by default
-- uses `llama-cpp-python` with a GGUF model
-- is built around one prompt template and deterministic greedy decoding by default
-- reads and writes the official HIPE 2026 JSONL document format
-- classifies the provided `sampled_pairs` in each document
+- runs fully locally;
+- is zero-shot by default;
+- uses `llama-cpp-python` with a GGUF model;
+- is built around one prompt template and deterministic greedy decoding by default;
+- reads and writes the official HIPE 2026 JSONL document format;
+- classifies the provided `sampled_pairs` in each document.
 
-If you want to change the baseline, you should mostly need to touch only a few files:
+If you want to change the baseline, you need to touch only a few files:
 
-- `prompts/classify_pair.txt`: change the task instructions
-- `src/hipe2026_mistral_baseline/run_baseline.py`: change the prediction loop or fallback policy
-- `src/hipe2026_mistral_baseline/inference.py`: change decoding settings or swap the local runner
-- `src/hipe2026_mistral_baseline/export.py`: change output writing
+- `prompts/classify_pair.txt`: change the task instructions;
+- `src/hipe2026_mistral_baseline/run_baseline.py`: change the prediction loop or fallback policy;
+- `src/hipe2026_mistral_baseline/inference.py`: change decoding settings or swap the local runner;
+- `src/hipe2026_mistral_baseline/export.py`: change output writing.
 
-## Important schema note
+## Schema and data format
 
-The released HIPE 2026 schema uses `sampled_pairs` inside each document. That means the official scorer expects predictions in the same document JSONL shape, with labels filled in for each sampled person-place pair.
+This baseline works with the [HIPE-2026 schema](https://github.com/hipe-eval/HIPE-2026-data/blob/main/schemas/hipe-2026-data.schema.json), which organizes data as documents containing pre-sampled person-place pairs. Rather than generating predictions over a full Cartesian product of entities, the baseline classifies the pairs that are already provided in each document.
 
-The current public schema allows:
+The schema defines these allowed values for the relation fields:
 
 - `at`: `TRUE`, `PROBABLE`, `FALSE`
 - `isAt`: `TRUE`, `FALSE`
 
-So this baseline preserves the document structure and predicts labels per sampled pair rather than rebuilding a full Cartesian product over all entities.
+The baseline preserves the input document structure and produces predictions by filling in these relation labels for each sampled pair. The official scorer expects predictions in this same document JSONL format with the relation labels populated for each pair.
+ 
 
 ## Model and runtime
 
@@ -65,9 +66,9 @@ This is a zero-shot prompting baseline:
 - no retrieval stage by default
 - greedy decoding by default (`temperature=0.0` in `llama-cpp-python`)
 
-Participants can extend it with few-shot prompting, sentence selection, retrieval, or a classifier later.
+This baseline is constrained to core functionality and preserves the option space to experiment with extensions like few-shot prompting, retrieval augmentation, or task-specific fine-tuning.
 
-## Layout
+## Repository structure
 
 ```text
 .
@@ -89,6 +90,15 @@ Participants can extend it with few-shot prompting, sentence selection, retrieva
 │   └── fixtures/
 └── pyproject.toml
 ```
+
+## External repositories
+
+This baseline depends on the [HIPE-2026-data](https://github.com/hipe-eval/HIPE-2026-data) repository for:
+
+- **data**: the official HIPE 2026 JSONL files under `data/`
+- **scorer**: `scripts/file_scorer_evaluation.py` — the official evaluation script (currently bundled in the data repository; expected to move to a dedicated repository in the future)
+
+`remake setup` clones this repository automatically under `HIPE-2026-data/`.
 
 ## Local setup
 
@@ -174,7 +184,7 @@ This runs:
 - the official evaluation on those outputs
 - the merged diagnostic JSON export
 
-Once the official test files are released, you can run the baseline on the test split with:
+Once the official unmasked test files will be released (post-competition), it will be possible to run the baseline on the test split with:
 
 ```bash
 remake world-test
@@ -291,7 +301,7 @@ remake test
 
 The tests use a fake inference backend and do not require `llama-cpp-python` or model files.
 
-## Where To Start Editing
+## Where to start editing
 
 Common modifications:
 
