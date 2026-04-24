@@ -115,27 +115,27 @@ In practice, that usually means reviewing:
 
 ## Local Verification
 
-Use the project `venv/` and `remake`, not the system `make`.
+Use the project `venv/` and `make`, not the system `make`.
 
 Recommended release checks:
 
 ```bash
 python3 -m py_compile src/hipe2026_mistral_baseline/*.py scripts/*.py tests/*.py
-remake test
+make test
 ```
 
 If you changed setup or scorer wiring, also verify:
 
 ```bash
-remake -n setup
-remake -n run-baseline
-remake -n evaluate-baseline
+make -n setup
+make -n run-baseline
+make -n evaluate-baseline
 ```
 
 If you changed the help text or Makefile defaults, also check:
 
 ```bash
-remake
+make
 ```
 
 If you changed the actual inference path, it is useful to run at least one small real
@@ -149,7 +149,7 @@ baseline command locally, but that is optional because it depends on:
 Example:
 
 ```bash
-remake run-baseline RUN_BASELINE_ARGS='--max-docs 1'
+make run-baseline RUN_BASELINE_ARGS='--max-docs 1'
 ```
 
 ## Release Checklist
@@ -161,8 +161,8 @@ Before tagging, confirm all of the following:
 - `RELEASE.md` matches the intended release
 - `README.md` reflects current defaults
 - `python3 -m py_compile ...` passes
-- `remake test` passes
-- any changed Makefile wiring looks correct with `remake -n`
+- `make test` passes
+- any changed Makefile wiring looks correct with `make -n`
 
 Useful commands:
 
@@ -232,7 +232,7 @@ Example progression:
 ## Notes Specific to This Repository
 
 - Do not vendor the `HIPE-2026-data` repository into the release. The repo is expected
-  to be cloned separately by `remake setup`.
+  to be cloned separately by `make setup`.
 - Do not commit model files or Hugging Face cache contents.
 - Keep the baseline easy to modify. If a release adds complexity, document the reason
   clearly in `README.md` and `RELEASE.md`.

@@ -31,7 +31,6 @@ The schema defines these allowed values for the relation fields:
 - `isAt`: `TRUE`, `FALSE`
 
 The baseline preserves the input document structure and produces predictions by filling in these relation labels for each sampled pair. The official scorer expects predictions in this same document JSONL format with the relation labels populated for each pair.
- 
 
 ## Model and runtime
 
@@ -98,7 +97,7 @@ This baseline depends on the [HIPE-2026-data](https://github.com/hipe-eval/HIPE-
 - **data**: the official HIPE 2026 JSONL files under `data/`
 - **scorer**: `scripts/file_scorer_evaluation.py` — the official evaluation script (currently bundled in the data repository; expected to move to a dedicated repository in the future)
 
-`remake setup` clones this repository automatically under `HIPE-2026-data/`.
+`make setup` clones this repository automatically under `HIPE-2026-data/`.
 
 ## Local setup
 
@@ -107,7 +106,7 @@ Use a local `venv/` environment:
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-remake setup
+make setup
 ```
 
 This:
@@ -118,19 +117,19 @@ This:
 - downloads the public HIPE 2026 data repo
 - installs the official HIPE scorer dependencies from `HIPE-2026-data/requirements.txt`
 
-The default `remake run-baseline` path downloads the model from Hugging Face and
+The default `make run-baseline` path downloads the model from Hugging Face and
 uses the project-local cache from `.env`.
 
 If you only want to download the data later:
 
 ```bash
-remake install-data
+make install-data
 ```
 
 If you only want to install the HIPE scorer dependencies later:
 
 ```bash
-remake install-data-deps
+make install-data-deps
 ```
 
 Project conventions:
@@ -152,7 +151,7 @@ Design choices:
 Run the baseline on a HIPE JSONL file:
 
 ```bash
-remake run-baseline
+make run-baseline
 ```
 
 This no-config path is the default intended workflow.
@@ -169,13 +168,13 @@ Progress logs are timestamped and updated inline for each sampled pair.
 To run the baseline on the main English, German, and French files in sequence:
 
 ```bash
-remake run-all-languages
+make run-all-languages
 ```
 
 To run the full train workflow in one command:
 
 ```bash
-remake world
+make world
 ```
 
 This runs:
@@ -187,20 +186,20 @@ This runs:
 Once the official unmasked test files will be released (post-competition), it will be possible to run the baseline on the test split with:
 
 ```bash
-remake world-test
+make world-test
 ```
 
 `world-test` runs only the baselines and writes test predictions and debug traces under
 `results.d/`. It does not try to evaluate or diagnose the test split by default.
 
-The prediction files are Make targets. If an output file already exists, `remake`
-will not rebuild it. Use `remake clean` or delete the specific output file to force
+The prediction files are Make targets. If an output file already exists, `make`
+will not rebuild it. Use `make clean` or delete the specific output file to force
 another run.
 
 You can still override the defaults:
 
 ```bash
-remake run-baseline \
+make run-baseline \
   INPUT_JSONL=HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-de.jsonl \
   OUTPUT_JSONL=results.d/predictions.de.jsonl \
   DEBUG_JSONL=results.d/debug.de.jsonl
@@ -209,7 +208,7 @@ remake run-baseline \
 Or use a local GGUF explicitly:
 
 ```bash
-remake run-baseline RUN_BASELINE_ARGS='--model-path models/your-model.gguf'
+make run-baseline RUN_BASELINE_ARGS='--model-path models/your-model.gguf'
 ```
 
 If you want a small amount of reusable configuration, you can optionally pass a
@@ -244,7 +243,7 @@ python scripts/run_baseline.py \
 If you have a local checkout of the official HIPE 2026 data repo, use the helper wrapper:
 
 ```bash
-remake evaluate-baseline
+make evaluate-baseline
 ```
 
 The evaluation wrapper prints both the official HIPE metrics and a per-label confusion
@@ -253,20 +252,20 @@ matrix for `at` and `isAt`.
 To evaluate the main English, German, and French outputs in sequence:
 
 ```bash
-remake evaluate-all-languages
+make evaluate-all-languages
 ```
 
 To build a merged diagnostic JSON with gold labels, system labels, explanations, and
 correctness flags:
 
 ```bash
-remake diagnose-baseline
+make diagnose-baseline
 ```
 
 To build the same diagnostic files for English, German, and French in sequence:
 
 ```bash
-remake diagnose-all-languages
+make diagnose-all-languages
 ```
 
 The diagnostic JSON keeps the document structure and adds, for each sampled pair:
@@ -286,7 +285,7 @@ By default this evaluates:
 You can override them inline, for example:
 
 ```bash
-remake evaluate-baseline \
+make evaluate-baseline \
   OUTPUT_JSONL=results.d/predictions.de.jsonl \
   GOLD_JSONL=HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-de.jsonl
 ```
@@ -296,7 +295,7 @@ remake evaluate-baseline \
 Run the unit tests with:
 
 ```bash
-remake test
+make test
 ```
 
 The tests use a fake inference backend and do not require `llama-cpp-python` or model files.

@@ -60,20 +60,20 @@ help:
 	@echo "HIPE 2026 Mistral Baseline"
 	@echo ""
 	@echo "Main targets:"
-	@echo "  remake setup              Create .env, install package, clone/update HIPE-2026-data, install scorer deps"
-	@echo "  remake world              Run baselines, and when enabled also evaluate outputs and build diagnostics"
-	@echo "  remake world-test         Run baselines on the released test split without evaluation"
-	@echo "  remake run-baseline       Run the baseline on INPUT_JSONL"
-	@echo "  remake run-all-languages  Run the baseline on EN, DE, and FR"
-	@echo "  remake evaluate-baseline  Score OUTPUT_JSONL against GOLD_JSONL"
-	@echo "  remake evaluate-all-languages  Score EN, DE, and FR outputs"
-	@echo "  remake diagnose-baseline  Merge GOLD_JSONL and OUTPUT_JSONL into DIAGNOSTIC_JSON"
-	@echo "  remake diagnose-all-languages  Build EN, DE, and FR diagnostic JSON files"
-	@echo "  remake test               Run the test suite"
-	@echo "  remake clean              Remove local caches and generated outputs"
+	@echo "  make setup              Create .env, install package, clone/update HIPE-2026-data, install scorer deps"
+	@echo "  make world              Run baselines, and when enabled also evaluate outputs and build diagnostics"
+	@echo "  make world-test         Run baselines on the released test split without evaluation"
+	@echo "  make run-baseline       Run the baseline on INPUT_JSONL"
+	@echo "  make run-all-languages  Run the baseline on EN, DE, and FR"
+	@echo "  make evaluate-baseline  Score OUTPUT_JSONL against GOLD_JSONL"
+	@echo "  make evaluate-all-languages  Score EN, DE, and FR outputs"
+	@echo "  make diagnose-baseline  Merge GOLD_JSONL and OUTPUT_JSONL into DIAGNOSTIC_JSON"
+	@echo "  make diagnose-all-languages  Build EN, DE, and FR diagnostic JSON files"
+	@echo "  make test               Run the test suite"
+	@echo "  make clean              Remove local caches and generated outputs"
 	@echo ""
-	@echo "Baseline outputs are file targets: if a prediction file already exists, remake will not rebuild it."
-	@echo "Use 'remake clean' or delete specific outputs to force a rerun."
+	@echo "Baseline outputs are file targets: if a prediction file already exists, make will not rebuild it."
+	@echo "Use 'make clean' or delete specific outputs to force a rerun."
 	@echo ""
 	@echo "Important variables:"
 	@echo "  DATASET_SPLIT=$(DATASET_SPLIT)"
@@ -89,13 +89,13 @@ help:
 	@echo "  HF_FILENAME=$(HF_FILENAME)"
 	@echo ""
 	@echo "Examples:"
-	@echo "  remake setup"
-	@echo "  remake world"
-	@echo "  remake world-test"
-	@echo "  remake run-baseline"
-	@echo "  remake evaluate-baseline"
-	@echo "  remake diagnose-baseline"
-	@echo "  remake run-baseline INPUT_JSONL=$(DATA_REPO_DIR)/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-de.jsonl OUTPUT_JSONL=$(RESULTS_DIR)/predictions.de.jsonl DEBUG_JSONL=$(RESULTS_DIR)/debug.de.jsonl"
+	@echo "  make setup"
+	@echo "  make world"
+	@echo "  make world-test"
+	@echo "  make run-baseline"
+	@echo "  make evaluate-baseline"
+	@echo "  make diagnose-baseline"
+	@echo "  make run-baseline INPUT_JSONL=$(DATA_REPO_DIR)/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-de.jsonl OUTPUT_JSONL=$(RESULTS_DIR)/predictions.de.jsonl DEBUG_JSONL=$(RESULTS_DIR)/debug.de.jsonl"
 
 setup: init-env install install-data install-data-deps
 
@@ -134,7 +134,7 @@ install-data-deps:
 	@if [ -f "$(DATA_REQUIREMENTS)" ]; then \
 		$(PYTHON) -m pip install -r "$(DATA_REQUIREMENTS)"; \
 	else \
-		echo "Missing $(DATA_REQUIREMENTS). Run 'remake install-data' first."; \
+		echo "Missing $(DATA_REQUIREMENTS). Run 'make install-data' first."; \
 		exit 1; \
 	fi
 

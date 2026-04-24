@@ -3,7 +3,7 @@ Place HIPE 2026 input JSONL files in this directory.
 The baseline now works directly with the cloned `HIPE-2026-data/` repository at the
 project root instead of copying files into this directory.
 
-The default `remake install-data` target clones the official GitHub repo into:
+The default `make install-data` target clones the official GitHub repo into:
 
 - `HIPE-2026-data/`
 

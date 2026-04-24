@@ -414,7 +414,7 @@ def _resolve_existing_file(path_string: str, *, description: str) -> Path:
         if description == "input JSONL":
             raise FileNotFoundError(
                 f"{description} not found: {path}\n"
-                "Run `remake setup` to install dependencies and clone the public data repo,\n"
+                "Run `make setup` to install dependencies and clone the public data repo,\n"
                 "or point --input-jsonl to an existing file.\n"
                 "Default example path after setup:\n"
                 "  HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-en.jsonl\n"

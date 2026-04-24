@@ -9,7 +9,7 @@ Initial research baseline release for HIPE 2026 person-place relation qualificat
 - pairwise prediction over provided `sampled_pairs`
 - one default prompt template with greedy decoding by default (`temperature=0.0`)
 - strict parsing and validation with conservative fallback behavior
-- `remake` targets for setup, baseline runs, evaluation, and diagnostics
+- `make` targets for setup, baseline runs, evaluation, and diagnostics
 - tests including a smoke path with fake inference
 
 ## Default Runtime Configuration
@@ -38,10 +38,10 @@ Initial research baseline release for HIPE 2026 person-place relation qualificat
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-remake setup
+make setup
 ```
 
-- `remake setup` creates `.env`, sets `HF_HOME=./hf.d`, installs the package, clones or updates `HIPE-2026-data/`, and installs scorer dependencies
+- `make setup` creates `.env`, sets `HF_HOME=./hf.d`, installs the package, clones or updates `HIPE-2026-data/`, and installs scorer dependencies
 - model weights are not included; use the default Hugging Face GGUF or provide `--model-path` to a local GGUF file
 
 ## Usage
@@ -49,10 +49,10 @@ remake setup
 - default no-config run path after setup:
 
 ```bash
-remake run-baseline
-remake evaluate-baseline
-remake run-all-languages
-remake world
+make run-baseline
+make evaluate-baseline
+make run-all-languages
+make world
 ```
 
 ## Notes
