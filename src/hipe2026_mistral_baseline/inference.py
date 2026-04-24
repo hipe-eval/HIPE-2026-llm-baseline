@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import logging
-import platform
 import time
 from typing import Protocol
 
@@ -80,12 +79,12 @@ def resolve_model_path(
 def auto_n_gpu_layers(*, supports_gpu_offload: bool) -> int:
     """Choose a sensible default for GPU offload.
 
-    On Apple Silicon, prefer Metal offload when the runtime supports it.
-    Otherwise default to CPU-only.
+    If the installed llama-cpp-python runtime was built with GPU support
+    (CUDA, Metal, Vulkan, HIP, SYCL), offload all layers. Otherwise CPU-only.
+    Users can still override via --n-gpu-layers.
     """
 
-    is_macos_arm = platform.system() == "Darwin" and platform.machine() == "arm64"
-    return -1 if is_macos_arm and supports_gpu_offload else 0
+    return -1 if supports_gpu_offload else 0
 
 
 def detect_gpu_backend(lib_dir: Path) -> str | None:

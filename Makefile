@@ -50,6 +50,10 @@ RUN_BASELINE_ARGS ?=
 EVALUATE_ARGS ?=
 DIAGNOSTIC_ARGS ?=
 
+# CUDA wheel index for llama-cpp-python. Override LLAMA_CPP_CUDA_INDEX to match
+# your CUDA toolkit (cu121, cu122, cu123, cu124). Default targets cu124.
+LLAMA_CPP_CUDA_INDEX ?= https://abetlen.github.io/llama-cpp-python/whl/cu124
+
 .PHONY: help setup init-env install install-data install-data-deps evaluate-baseline evaluate-all-languages diagnose-baseline diagnose-all-languages world world-test clean test
 
 help:
@@ -108,6 +112,14 @@ init-env:
 
 install:
 	$(PYTHON) -m pip install -e .
+	@if command -v nvidia-smi >/dev/null 2>&1; then \
+		echo "NVIDIA GPU detected, installing CUDA build of llama-cpp-python from $(LLAMA_CPP_CUDA_INDEX)"; \
+		$(PYTHON) -m pip install llama-cpp-python \
+			--extra-index-url "$(LLAMA_CPP_CUDA_INDEX)" \
+			--force-reinstall --no-cache-dir --upgrade; \
+	else \
+		echo "No NVIDIA GPU detected, keeping default llama-cpp-python (CPU / Metal on macOS)"; \
+	fi
 
 install-data:
 	@if [ -d "$(DATA_REPO_DIR)/.git" ]; then \
