@@ -457,7 +457,7 @@ def main() -> None:
     config = GenerationConfig(
         temperature=float(_setting(args, config_values, "temperature", 0.0)),
         seed=int(_setting(args, config_values, "seed", 42)),
-        max_tokens=int(_setting(args, config_values, "max_tokens", 256)),
+        max_tokens=int(_setting(args, config_values, "max_tokens", 512)),
         top_p=float(_setting(args, config_values, "top_p", 0.95)),
         top_k=int(_setting(args, config_values, "top_k", 40)),
         repeat_penalty=float(_setting(args, config_values, "repeat_penalty", 1.0)),

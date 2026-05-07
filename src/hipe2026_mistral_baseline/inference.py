@@ -24,7 +24,7 @@ class GenerationConfig:
     # without digging through the inference call.
     temperature: float = 0.0
     seed: int = 42
-    max_tokens: int = 256
+    max_tokens: int = 512
     top_p: float = 0.95
     top_k: int = 40
     repeat_penalty: float = 1.0
