@@ -76,7 +76,8 @@ This baseline is constrained to core functionality and preserves the option spac
 │   └── model.example.json
 ├── HIPE-2026-data/
 ├── models/
-├── results.d/
+├── results-train.d/
+├── results-test.d/
 ├── scripts/
 │   ├── evaluate_predictions.py
 │   ├── compare_predictions.py
@@ -136,7 +137,8 @@ Project conventions:
 
 - use the cloned `HIPE-2026-data/` repo directly
 - let Hugging Face cache GGUF files under project-local `./hf.d/` by default
-- write predictions, debug traces, and diagnostics under `results.d/`
+- write train predictions, debug traces, and diagnostics under `results-train.d/`
+- write test predictions and debug traces under `results-test.d/`
 - keep optional model defaults in `configs/`
 
 Design choices:
@@ -190,7 +192,61 @@ make world-test
 ```
 
 `world-test` runs only the baselines and writes test predictions and debug traces under
-`results.d/`. It does not try to evaluate or diagnose the test split by default.
+`results-test.d/`. It does not try to evaluate or diagnose the test split by default.
+The output filename keeps the input file stem, so multiple French test files do
+not overwrite one another.
+
+By default, `world-test` expects files named:
+
+```text
+HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-test-en.jsonl
+HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-test-de.jsonl
+HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-test-fr.jsonl
+```
+
+For internal test files with a different basename, override only the prefix:
+
+```bash
+make world-test TEST_INPUT_PREFIX=HIPE-2026-v1.0-impresso-test-internal
+```
+
+This would read:
+
+```text
+HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-test-internal-en.jsonl
+HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-test-internal-de.jsonl
+HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-test-internal-fr.jsonl
+```
+
+For test files stored in another directory with the standard basenames, override
+only the directory:
+
+```bash
+make world-test TEST_INPUT_DIR=data/test
+```
+
+This matches files like:
+
+```text
+data/test/HIPE-2026-v1.0-impresso-test-en.jsonl
+data/test/HIPE-2026-v1.0-impresso-test-de.jsonl
+data/test/HIPE-2026-v1.0-impresso-test-fr.jsonl
+```
+
+and writes:
+
+```text
+results-test.d/predictions.HIPE-2026-v1.0-impresso-test-en.jsonl
+results-test.d/predictions.HIPE-2026-v1.0-impresso-test-de.jsonl
+results-test.d/predictions.HIPE-2026-v1.0-impresso-test-fr.jsonl
+```
+
+If `data/test/HIPE-2026-v1.0-surprise-test-fr.jsonl` exists, `world-test`
+also writes:
+
+```text
+results-test.d/predictions.HIPE-2026-v1.0-surprise-test-fr.jsonl
+```
 
 The prediction files are Make targets. If an output file already exists, `make`
 will not rebuild it. Use `make clean` or delete the specific output file to force
@@ -201,8 +257,8 @@ You can still override the defaults:
 ```bash
 make run-baseline \
   INPUT_JSONL=HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-de.jsonl \
-  OUTPUT_JSONL=results.d/predictions.de.jsonl \
-  DEBUG_JSONL=results.d/debug.de.jsonl
+  OUTPUT_JSONL=results-train.d/predictions.de.jsonl \
+  DEBUG_JSONL=results-train.d/debug.de.jsonl
 ```
 
 Or use a local GGUF explicitly:
@@ -218,7 +274,7 @@ JSON config file for model, prompt, and decoding defaults:
 python scripts/run_baseline.py \
   --config configs/model.example.json \
   --input-jsonl HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-en.jsonl \
-  --output-jsonl results.d/predictions.en.jsonl
+  --output-jsonl results-train.d/predictions.en.jsonl
 ```
 
 CLI flags override config values, so the simplest pattern is:
@@ -232,8 +288,8 @@ Direct CLI usage with Hugging Face also works:
 HF_HOME=./hf.d \
 python scripts/run_baseline.py \
   --input-jsonl HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-en.jsonl \
-  --output-jsonl results.d/predictions.en.jsonl \
-  --debug-jsonl results.d/debug.en.jsonl \
+  --output-jsonl results-train.d/predictions.en.jsonl \
+  --debug-jsonl results-train.d/debug.en.jsonl \
   --hf-repo mistralai/Ministral-3-3B-Instruct-2512-GGUF \
   --hf-filename Ministral-3-3B-Instruct-2512-Q4_K_M.gguf
 ```
@@ -277,7 +333,7 @@ The diagnostic JSON keeps the document structure and adds, for each sampled pair
 
 By default this evaluates:
 
-- `OUTPUT_JSONL=results.d/predictions.en.jsonl`
+- `OUTPUT_JSONL=results-train.d/predictions.en.jsonl`
 - `GOLD_JSONL=$(INPUT_JSONL)`
 - `SCORER_SCRIPT=HIPE-2026-data/scripts/file_scorer_evaluation.py`
 - `SCHEMA_FILE=HIPE-2026-data/schemas/hipe-2026-data.schema.json`
@@ -286,7 +342,7 @@ You can override them inline, for example:
 
 ```bash
 make evaluate-baseline \
-  OUTPUT_JSONL=results.d/predictions.de.jsonl \
+  OUTPUT_JSONL=results-train.d/predictions.de.jsonl \
   GOLD_JSONL=HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-de.jsonl
 ```
 

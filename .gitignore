@@ -12,3 +12,5 @@ hf.d/
 HIPE-2026-data/
 models/*.gguf
 results.d/
+results-*.d/
+*.d/

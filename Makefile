@@ -11,10 +11,14 @@ DATA_REPO_URL ?= https://github.com/hipe-eval/HIPE-2026-data.git
 DATA_REPO_DIR ?= HIPE-2026-data
 DATA_REQUIREMENTS ?= $(DATA_REPO_DIR)/requirements.txt
 DATASET_SPLIT ?= train
-DATASET_OUTPUT_TAG ?= $(if $(filter train,$(DATASET_SPLIT)),,$(DATASET_SPLIT).)
+DATASET_OUTPUT_TAG ?=
 ENABLE_EVAL ?= $(if $(filter train,$(DATASET_SPLIT)),1,0)
 ENABLE_DIAGNOSTICS ?= $(if $(filter train,$(DATASET_SPLIT)),1,0)
-RESULTS_DIR ?= results.d
+RESULTS_DIR ?= results-$(DATASET_SPLIT).d
+TEST_RESULTS_DIR ?= results-test.d
+TEST_INPUT_DIR ?= $(DATA_REPO_DIR)/data/newspapers/v1.0
+TEST_INPUT_PREFIX ?= HIPE-2026-v1.0-impresso-test
+TEST_SURPRISE_FR_INPUT_PREFIX ?= HIPE-2026-v1.0-surprise-test
 INPUT_JSONL ?= $(DATA_REPO_DIR)/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-$(DATASET_SPLIT)-en.jsonl
 OUTPUT_JSONL ?= $(RESULTS_DIR)/predictions.$(DATASET_OUTPUT_TAG)en.jsonl
 DEBUG_JSONL ?= $(RESULTS_DIR)/debug.$(DATASET_OUTPUT_TAG)en.jsonl
@@ -25,24 +29,31 @@ SCHEMA_FILE ?= $(DATA_REPO_DIR)/schemas/hipe-2026-data.schema.json
 EN_INPUT_JSONL ?= $(DATA_REPO_DIR)/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-$(DATASET_SPLIT)-en.jsonl
 DE_INPUT_JSONL ?= $(DATA_REPO_DIR)/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-$(DATASET_SPLIT)-de.jsonl
 FR_INPUT_JSONL ?= $(DATA_REPO_DIR)/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-$(DATASET_SPLIT)-fr.jsonl
-TEST_EN_INPUT_JSONL ?= $(DATA_REPO_DIR)/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-test-en.jsonl
-TEST_DE_INPUT_JSONL ?= $(DATA_REPO_DIR)/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-test-de.jsonl
-TEST_FR_INPUT_JSONL ?= $(DATA_REPO_DIR)/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-test-fr.jsonl
+TEST_EN_INPUT_JSONL ?= $(TEST_INPUT_DIR)/$(TEST_INPUT_PREFIX)-en.jsonl
+TEST_DE_INPUT_JSONL ?= $(TEST_INPUT_DIR)/$(TEST_INPUT_PREFIX)-de.jsonl
+TEST_FR_INPUT_JSONL ?= $(TEST_INPUT_DIR)/$(TEST_INPUT_PREFIX)-fr.jsonl
+TEST_SURPRISE_FR_INPUT_JSONL ?= $(TEST_INPUT_DIR)/$(TEST_SURPRISE_FR_INPUT_PREFIX)-fr.jsonl
 EN_OUTPUT_JSONL ?= $(RESULTS_DIR)/predictions.$(DATASET_OUTPUT_TAG)en.jsonl
 DE_OUTPUT_JSONL ?= $(RESULTS_DIR)/predictions.$(DATASET_OUTPUT_TAG)de.jsonl
 FR_OUTPUT_JSONL ?= $(RESULTS_DIR)/predictions.$(DATASET_OUTPUT_TAG)fr.jsonl
-TEST_EN_OUTPUT_JSONL ?= $(RESULTS_DIR)/predictions.test.en.jsonl
-TEST_DE_OUTPUT_JSONL ?= $(RESULTS_DIR)/predictions.test.de.jsonl
-TEST_FR_OUTPUT_JSONL ?= $(RESULTS_DIR)/predictions.test.fr.jsonl
+TEST_EN_STEM ?= $(basename $(notdir $(TEST_EN_INPUT_JSONL)))
+TEST_DE_STEM ?= $(basename $(notdir $(TEST_DE_INPUT_JSONL)))
+TEST_FR_STEM ?= $(basename $(notdir $(TEST_FR_INPUT_JSONL)))
+TEST_SURPRISE_FR_STEM ?= $(basename $(notdir $(TEST_SURPRISE_FR_INPUT_JSONL)))
+TEST_EN_OUTPUT_JSONL ?= $(TEST_RESULTS_DIR)/predictions.$(TEST_EN_STEM).jsonl
+TEST_DE_OUTPUT_JSONL ?= $(TEST_RESULTS_DIR)/predictions.$(TEST_DE_STEM).jsonl
+TEST_FR_OUTPUT_JSONL ?= $(TEST_RESULTS_DIR)/predictions.$(TEST_FR_STEM).jsonl
+TEST_SURPRISE_FR_OUTPUT_JSONL ?= $(TEST_RESULTS_DIR)/predictions.$(TEST_SURPRISE_FR_STEM).jsonl
 EN_DIAGNOSTIC_JSON ?= $(RESULTS_DIR)/predictions.$(DATASET_OUTPUT_TAG)en.diagnostic.json
 DE_DIAGNOSTIC_JSON ?= $(RESULTS_DIR)/predictions.$(DATASET_OUTPUT_TAG)de.diagnostic.json
 FR_DIAGNOSTIC_JSON ?= $(RESULTS_DIR)/predictions.$(DATASET_OUTPUT_TAG)fr.diagnostic.json
 EN_DEBUG_JSONL ?= $(RESULTS_DIR)/debug.$(DATASET_OUTPUT_TAG)en.jsonl
 DE_DEBUG_JSONL ?= $(RESULTS_DIR)/debug.$(DATASET_OUTPUT_TAG)de.jsonl
 FR_DEBUG_JSONL ?= $(RESULTS_DIR)/debug.$(DATASET_OUTPUT_TAG)fr.jsonl
-TEST_EN_DEBUG_JSONL ?= $(RESULTS_DIR)/debug.test.en.jsonl
-TEST_DE_DEBUG_JSONL ?= $(RESULTS_DIR)/debug.test.de.jsonl
-TEST_FR_DEBUG_JSONL ?= $(RESULTS_DIR)/debug.test.fr.jsonl
+TEST_EN_DEBUG_JSONL ?= $(TEST_RESULTS_DIR)/debug.$(TEST_EN_STEM).jsonl
+TEST_DE_DEBUG_JSONL ?= $(TEST_RESULTS_DIR)/debug.$(TEST_DE_STEM).jsonl
+TEST_FR_DEBUG_JSONL ?= $(TEST_RESULTS_DIR)/debug.$(TEST_FR_STEM).jsonl
+TEST_SURPRISE_FR_DEBUG_JSONL ?= $(TEST_RESULTS_DIR)/debug.$(TEST_SURPRISE_FR_STEM).jsonl
 HF_HOME ?= ./hf.d
 HF_REPO ?= mistralai/Ministral-3-3B-Instruct-2512-GGUF
 HF_FILENAME ?= Ministral-3-3B-Instruct-2512-Q4_K_M.gguf
@@ -79,6 +90,10 @@ help:
 	@echo "  DATASET_SPLIT=$(DATASET_SPLIT)"
 	@echo "  INPUT_JSONL=$(INPUT_JSONL)"
 	@echo "  RESULTS_DIR=$(RESULTS_DIR)"
+	@echo "  TEST_RESULTS_DIR=$(TEST_RESULTS_DIR)"
+	@echo "  TEST_INPUT_DIR=$(TEST_INPUT_DIR)"
+	@echo "  TEST_INPUT_PREFIX=$(TEST_INPUT_PREFIX)"
+	@echo "  TEST_SURPRISE_FR_INPUT_PREFIX=$(TEST_SURPRISE_FR_INPUT_PREFIX)"
 	@echo "  OUTPUT_JSONL=$(OUTPUT_JSONL)"
 	@echo "  DEBUG_JSONL=$(DEBUG_JSONL)"
 	@echo "  DIAGNOSTIC_JSON=$(DIAGNOSTIC_JSON)"
@@ -200,15 +215,23 @@ world-test:
 		EN_DEBUG_JSONL="$(TEST_EN_DEBUG_JSONL)" \
 		DE_DEBUG_JSONL="$(TEST_DE_DEBUG_JSONL)" \
 		FR_DEBUG_JSONL="$(TEST_FR_DEBUG_JSONL)"
+	@if [ -f "$(TEST_SURPRISE_FR_INPUT_JSONL)" ]; then \
+		$(MAKE) run-baseline \
+			INPUT_JSONL="$(TEST_SURPRISE_FR_INPUT_JSONL)" \
+			OUTPUT_JSONL="$(TEST_SURPRISE_FR_OUTPUT_JSONL)" \
+			DEBUG_JSONL="$(TEST_SURPRISE_FR_DEBUG_JSONL)"; \
+	else \
+		echo "Skipping optional surprise FR test file: $(TEST_SURPRISE_FR_INPUT_JSONL)"; \
+	fi
 
 clean:
 	rm -rf .pytest_cache
 	rm -rf hf.d
 	rm -rf $(RESULTS_DIR)
+	rm -rf $(TEST_RESULTS_DIR)
 	rm -rf src/*.egg-info
 	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
-	find outputs -type f ! -name "README.md" -delete
 
 test:
 	$(PYTHON) -m unittest discover -s tests -p "test_*.py"
