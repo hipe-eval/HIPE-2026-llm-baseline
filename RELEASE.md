@@ -1,3 +1,35 @@
+# Release 0.2.1
+
+Patch release for running the unchanged 0.2.x baseline on the released test files.
+
+## What Changed
+
+- added the current test JSONL files under `data/test/`
+- kept the baseline prompt and model behavior unchanged from the 0.2.x line
+- updated `world-test` so test input files can be read from a configurable `TEST_INPUT_DIR`
+- changed test output names to preserve the input file stem, avoiding collisions when more than one test file exists for the same language
+- kept train artifacts under `results-train.d/` and test artifacts under `results-test.d/`
+
+## Included Test Inputs
+
+- `data/test/HIPE-2026-v1.0-impresso-test-en.jsonl`
+- `data/test/HIPE-2026-v1.0-impresso-test-de.jsonl`
+- `data/test/HIPE-2026-v1.0-impresso-test-fr.jsonl`
+- `data/test/HIPE-2026-v1.0-surprise-test-fr.jsonl`
+
+## Test Run Command
+
+```bash
+make world-test TEST_INPUT_DIR=data/test
+```
+
+This writes prediction files under `results-test.d/` using the input stems, for example:
+
+```text
+results-test.d/predictions.HIPE-2026-v1.0-impresso-test-en.jsonl
+results-test.d/predictions.HIPE-2026-v1.0-surprise-test-fr.jsonl
+```
+
 # Release 0.2.0
 
 Second research baseline release for the HIPE-2026 person-place relation qualification task.

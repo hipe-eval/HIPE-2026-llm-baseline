@@ -185,10 +185,11 @@ This runs:
 - the official evaluation on those outputs
 - the merged diagnostic JSON export
 
-Once the official unmasked test files will be released (post-competition), it will be possible to run the baseline on the test split with:
+The release includes the current test files under `data/test/`. Run the baseline
+on the test split with:
 
 ```bash
-make world-test
+make world-test TEST_INPUT_DIR=data/test
 ```
 
 `world-test` runs only the baselines and writes test predictions and debug traces under
