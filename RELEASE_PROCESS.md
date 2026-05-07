@@ -11,9 +11,12 @@ The release unit is a tagged repository snapshot that includes:
 - the default runtime wiring in `Makefile`
 - the package metadata in `pyproject.toml`
 - the short release note in `RELEASE.md`
+- bundled non-secret test inputs under `data/test/`, when available
 
 The repository does not ship model weights or the HIPE data repo. Releases document
 the code, defaults, and instructions needed to reproduce a run locally.
+Generated run artifacts under `results-train.d/`, `results-test.d/`, `hf.d/`, and
+model files are not part of `main` releases.
 
 ## Release Style
 
@@ -44,6 +47,7 @@ v0.1.0
 4. Merge to `main`.
 5. Create an annotated tag from the merged commit.
 6. Optionally publish a GitHub release.
+7. If needed, archive generated result files on a separate archive branch.
 
 ## Prepare the Release
 
@@ -66,6 +70,15 @@ Pay particular attention to:
 - `pyproject.toml`
 - `RELEASE.md`
 - `tests/`
+- `data/test/`
+
+For a patch release that only adds test data or output wiring, confirm explicitly
+that the prompt and model behavior did not change:
+
+```bash
+git diff <previous-tag>..HEAD -- prompts/classify_pair.txt
+git diff <previous-tag>..HEAD -- src/hipe2026_mistral_baseline/inference.py
+```
 
 ### 2. Update the Version
 
@@ -106,6 +119,9 @@ Update documentation when the release changes:
 - setup commands
 - Makefile targets
 - expected data paths under `HIPE-2026-data/`
+- bundled test-data paths under `data/test/`
+- generated output names under `results-train.d/` and `results-test.d/`
+- run config JSON files, named like `baseline_<input-stem>_run1.config.json`
 
 In practice, that usually means reviewing:
 
@@ -115,7 +131,7 @@ In practice, that usually means reviewing:
 
 ## Local Verification
 
-Use the project `venv/` and `make`, not the system `make`.
+Use the project `venv/` and the repository Makefile.
 
 Recommended release checks:
 
@@ -136,6 +152,25 @@ If you changed the help text or Makefile defaults, also check:
 
 ```bash
 make
+```
+
+If you changed test-data handling or result naming, also check:
+
+```bash
+make -n world-test TEST_INPUT_DIR=data/test
+```
+
+This should write test outputs using the shared-task style:
+
+```text
+results-test.d/baseline_<input-stem>_run1.jsonl
+results-test.d/baseline_<input-stem>_run1.config.json
+```
+
+If test JSONL files are included, validate them line by line:
+
+```bash
+python3 -c 'import json, pathlib; [json.loads(line) for path in pathlib.Path("data/test").glob("*.jsonl") for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]'
 ```
 
 If you changed the actual inference path, it is useful to run at least one small real
@@ -163,6 +198,10 @@ Before tagging, confirm all of the following:
 - `python3 -m py_compile ...` passes
 - `make test` passes
 - any changed Makefile wiring looks correct with `make -n`
+- test output names follow `baseline_<input-stem>_run<run-number>.jsonl`
+- each generated prediction file has a neighboring `.config.json` with
+  project-relative paths only
+- generated `results-*.d/` files are not tracked on `main`
 
 Useful commands:
 
@@ -205,13 +244,47 @@ The GitHub release should describe the same repository state as:
 You can create the GitHub release either in the GitHub web UI or with the GitHub CLI.
 The `gh` tool is convenient, but it is not required by this process.
 
-Example with `gh`:
+Use only the matching release section from `RELEASE.md` as the body. For example:
 
 ```bash
-gh release create v0.1.1 --title "Release 0.1.1" --notes-file RELEASE.md
+awk '/^# Release 0\.1\.0/{exit} {print}' RELEASE.md > /tmp/hipe-release-v0.1.1.md
+gh release create v0.1.1 --title "Release 0.1.1" --notes-file /tmp/hipe-release-v0.1.1.md
 ```
 
 Use the actual release version instead of `0.1.1`.
+
+If the release already exists, inspect before editing:
+
+```bash
+gh release view v0.1.1
+```
+
+## Archiving Result Files
+
+Prediction, debug, diagnostic, and run-config outputs should not be committed to
+`main`. If result artifacts need to be preserved for documentation, create an
+archive branch from the release tag or `main`.
+
+Recommended branch name:
+
+```text
+archive/baseline-vX.Y.Z-results
+```
+
+Workflow:
+
+```bash
+git switch main
+git pull --ff-only
+git switch -c archive/baseline-vX.Y.Z-results
+git add -f results-test.d/
+git commit -m "Archive baseline vX.Y.Z test results"
+git push -u origin archive/baseline-vX.Y.Z-results
+git switch main
+git ls-files results-test.d
+```
+
+The final `git ls-files results-test.d` should print nothing on `main`.
 
 ## Hotfix Releases
 
@@ -234,6 +307,10 @@ Example progression:
 - Do not vendor the `HIPE-2026-data` repository into the release. The repo is expected
   to be cloned separately by `make setup`.
 - Do not commit model files or Hugging Face cache contents.
+- Do not commit generated `results-train.d/`, `results-test.d/`, or `results.d/`
+  outputs to `main`; use an archive branch for those files.
+- Keep generated run configuration paths project-relative. Avoid absolute local
+  paths such as `/Users/.../hipe-2026-llm-baseline/...`.
 - Keep the baseline easy to modify. If a release adds complexity, document the reason
   clearly in `README.md` and `RELEASE.md`.
 - Prefer keeping the release process lightweight. This is research code, so the main

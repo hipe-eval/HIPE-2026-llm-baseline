@@ -237,17 +237,27 @@ data/test/HIPE-2026-v1.0-impresso-test-fr.jsonl
 and writes:
 
 ```text
-results-test.d/predictions.HIPE-2026-v1.0-impresso-test-en.jsonl
-results-test.d/predictions.HIPE-2026-v1.0-impresso-test-de.jsonl
-results-test.d/predictions.HIPE-2026-v1.0-impresso-test-fr.jsonl
+results-test.d/baseline_HIPE-2026-v1.0-impresso-test-en_run1.jsonl
+results-test.d/baseline_HIPE-2026-v1.0-impresso-test-de_run1.jsonl
+results-test.d/baseline_HIPE-2026-v1.0-impresso-test-fr_run1.jsonl
 ```
 
 If `data/test/HIPE-2026-v1.0-surprise-test-fr.jsonl` exists, `world-test`
 also writes:
 
 ```text
-results-test.d/predictions.HIPE-2026-v1.0-surprise-test-fr.jsonl
+results-test.d/baseline_HIPE-2026-v1.0-surprise-test-fr_run1.jsonl
 ```
+
+Each prediction file also gets a neighboring run configuration JSON, for example:
+
+```text
+results-test.d/baseline_HIPE-2026-v1.0-impresso-test-en_run1.config.json
+```
+
+The config file records the input/output paths, model source, resolved model path,
+and generation settings such as temperature, seed, context window, and flash
+attention.
 
 The prediction files are Make targets. If an output file already exists, `make`
 will not rebuild it. Use `make clean` or delete the specific output file to force
@@ -258,8 +268,9 @@ You can still override the defaults:
 ```bash
 make run-baseline \
   INPUT_JSONL=HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-de.jsonl \
-  OUTPUT_JSONL=results-train.d/predictions.de.jsonl \
-  DEBUG_JSONL=results-train.d/debug.de.jsonl
+  OUTPUT_JSONL=results-train.d/baseline_HIPE-2026-v1.0-impresso-train-de_run1.jsonl \
+  DEBUG_JSONL=results-train.d/debug.baseline_HIPE-2026-v1.0-impresso-train-de_run1.jsonl \
+  RUN_CONFIG_JSON=results-train.d/baseline_HIPE-2026-v1.0-impresso-train-de_run1.config.json
 ```
 
 Or use a local GGUF explicitly:
@@ -275,7 +286,8 @@ JSON config file for model, prompt, and decoding defaults:
 python scripts/run_baseline.py \
   --config configs/model.example.json \
   --input-jsonl HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-en.jsonl \
-  --output-jsonl results-train.d/predictions.en.jsonl
+  --output-jsonl results-train.d/baseline_HIPE-2026-v1.0-impresso-train-en_run1.jsonl \
+  --run-config-json results-train.d/baseline_HIPE-2026-v1.0-impresso-train-en_run1.config.json
 ```
 
 CLI flags override config values, so the simplest pattern is:
@@ -289,8 +301,9 @@ Direct CLI usage with Hugging Face also works:
 HF_HOME=./hf.d \
 python scripts/run_baseline.py \
   --input-jsonl HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-en.jsonl \
-  --output-jsonl results-train.d/predictions.en.jsonl \
-  --debug-jsonl results-train.d/debug.en.jsonl \
+  --output-jsonl results-train.d/baseline_HIPE-2026-v1.0-impresso-train-en_run1.jsonl \
+  --debug-jsonl results-train.d/debug.baseline_HIPE-2026-v1.0-impresso-train-en_run1.jsonl \
+  --run-config-json results-train.d/baseline_HIPE-2026-v1.0-impresso-train-en_run1.config.json \
   --hf-repo mistralai/Ministral-3-3B-Instruct-2512-GGUF \
   --hf-filename Ministral-3-3B-Instruct-2512-Q4_K_M.gguf
 ```
@@ -334,7 +347,7 @@ The diagnostic JSON keeps the document structure and adds, for each sampled pair
 
 By default this evaluates:
 
-- `OUTPUT_JSONL=results-train.d/predictions.en.jsonl`
+- `OUTPUT_JSONL=results-train.d/baseline_HIPE-2026-v1.0-impresso-train-en_run1.jsonl`
 - `GOLD_JSONL=$(INPUT_JSONL)`
 - `SCORER_SCRIPT=HIPE-2026-data/scripts/file_scorer_evaluation.py`
 - `SCHEMA_FILE=HIPE-2026-data/schemas/hipe-2026-data.schema.json`
@@ -343,7 +356,7 @@ You can override them inline, for example:
 
 ```bash
 make evaluate-baseline \
-  OUTPUT_JSONL=results-train.d/predictions.de.jsonl \
+  OUTPUT_JSONL=results-train.d/baseline_HIPE-2026-v1.0-impresso-train-de_run1.jsonl \
   GOLD_JSONL=HIPE-2026-data/data/newspapers/v1.0/HIPE-2026-v1.0-impresso-train-de.jsonl
 ```
 

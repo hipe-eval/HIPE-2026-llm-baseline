@@ -1,16 +1,21 @@
 from __future__ import annotations
 
 import sys
+import json
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from hipe2026_mistral_baseline.inference import GenerationConfig
 from hipe2026_mistral_baseline.run_baseline import (
     _format_token_summary,
     _log_context_usage_summary,
     _nearest_rank_percentile,
+    _project_relative_path,
+    write_run_config_json,
 )
 
 
@@ -40,6 +45,47 @@ class TestRunBaselineStats(unittest.TestCase):
             _format_token_summary([100, 200, 300]),
             "min=100 avg=200.0 p50=200 p95=300 max=300",
         )
+
+    def test_project_relative_path(self) -> None:
+        absolute_path = Path.cwd() / "data/test/example.jsonl"
+        self.assertEqual(
+            _project_relative_path(absolute_path),
+            "data/test/example.jsonl",
+        )
+        self.assertIsNone(_project_relative_path(None))
+
+    def test_write_run_config_json(self) -> None:
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as tmpdir:
+            output_path = Path(tmpdir) / "baseline_example_run1.config.json"
+            with patch("hipe2026_mistral_baseline.run_baseline.LOGGER.info"):
+                write_run_config_json(
+                    path=output_path,
+                    input_jsonl=Path.cwd() / "data/test/example.jsonl",
+                    output_jsonl=Path.cwd() / "results-test.d/baseline_example_run1.jsonl",
+                    debug_jsonl=Path.cwd() / "results-test.d/debug.baseline_example_run1.jsonl",
+                    prompt_file="prompts/classify_pair.txt",
+                    config_file=None,
+                    model_path=Path.cwd() / "hf.d/model.gguf",
+                    model_source="huggingface",
+                    hf_repo="repo",
+                    hf_filename="model.gguf",
+                    cache_dir="hf.d",
+                    model_name="model-name",
+                    generation_config=GenerationConfig(temperature=0.0, seed=7),
+                    max_docs=3,
+                )
+
+            payload = json.loads(output_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(payload["input_jsonl"], "data/test/example.jsonl")
+        self.assertEqual(
+            payload["output_jsonl"],
+            "results-test.d/baseline_example_run1.jsonl",
+        )
+        self.assertEqual(payload["model"]["hf_repo"], "repo")
+        self.assertEqual(payload["generation"]["temperature"], 0.0)
+        self.assertEqual(payload["generation"]["seed"], 7)
+        self.assertEqual(payload["max_docs"], 3)
 
 
 if __name__ == "__main__":

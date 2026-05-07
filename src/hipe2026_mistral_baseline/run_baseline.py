@@ -5,8 +5,9 @@ from __future__ import annotations
 import argparse
 from datetime import datetime
 import json
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import logging
+import os
 from pathlib import Path
 import math
 import sys
@@ -259,6 +260,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--debug-jsonl",
         help="Optional debug JSONL file with prompts, raw outputs, and fallbacks.",
     )
+    parser.add_argument(
+        "--run-config-json",
+        help="Optional JSON file recording the effective run configuration.",
+    )
     parser.add_argument("--prompt-file", default=None, help="Override the prompt template file.")
     parser.add_argument("--model-path", default=None, help="Local GGUF model path.")
     parser.add_argument("--hf-repo", default=None, help="Hugging Face repo containing a GGUF file.")
@@ -433,6 +438,55 @@ def _prepare_output_path(path_string: str) -> Path:
     return path
 
 
+def _project_relative_path(path: str | Path | None) -> str | None:
+    if path is None:
+        return None
+    resolved_path = Path(path).expanduser().resolve()
+    return os.path.relpath(resolved_path, Path.cwd().resolve())
+
+
+def write_run_config_json(
+    *,
+    path: str | Path,
+    input_jsonl: Path,
+    output_jsonl: Path,
+    debug_jsonl: Path | None,
+    prompt_file: str | None,
+    config_file: str | None,
+    model_path: Path,
+    model_source: str,
+    hf_repo: object,
+    hf_filename: object,
+    cache_dir: object,
+    model_name: object,
+    generation_config: GenerationConfig,
+    max_docs: int | None,
+) -> None:
+    run_config_path = _prepare_output_path(str(path))
+    payload = {
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+        "input_jsonl": _project_relative_path(input_jsonl),
+        "output_jsonl": _project_relative_path(output_jsonl),
+        "debug_jsonl": _project_relative_path(debug_jsonl),
+        "prompt_file": _project_relative_path(prompt_file),
+        "config_file": _project_relative_path(config_file),
+        "model": {
+            "name": model_name,
+            "source": model_source,
+            "resolved_path": _project_relative_path(model_path),
+            "hf_repo": hf_repo,
+            "hf_filename": hf_filename,
+            "cache_dir": _project_relative_path(cache_dir),
+        },
+        "generation": asdict(generation_config),
+        "max_docs": max_docs,
+    }
+    with run_config_path.open("w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=False, indent=2)
+        handle.write("\n")
+    LOGGER.info("Wrote run config to %s", run_config_path)
+
+
 def main() -> None:
     parser = build_arg_parser()
     args = parser.parse_args()
@@ -443,10 +497,15 @@ def main() -> None:
     debug_jsonl = (
         _prepare_output_path(args.debug_jsonl) if args.debug_jsonl else None
     )
+    run_config_json = (
+        _prepare_output_path(args.run_config_json) if args.run_config_json else None
+    )
     LOGGER.info("Input JSONL: %s", input_jsonl)
     LOGGER.info("Output JSONL: %s", output_jsonl)
     if debug_jsonl:
         LOGGER.info("Debug JSONL: %s", debug_jsonl)
+    if run_config_json:
+        LOGGER.info("Run config JSON: %s", run_config_json)
 
     documents = load_jsonl(input_jsonl)
     if args.max_docs is not None:
@@ -484,6 +543,7 @@ def main() -> None:
         hf_filename=_setting(args, config_values, "hf_filename"),
         cache_dir=_setting(args, config_values, "cache_dir"),
     )
+    model_source = "local file" if _setting(args, config_values, "model_path") else "huggingface"
     if _setting(args, config_values, "model_path"):
         LOGGER.info("Model source: local file")
     else:
@@ -493,6 +553,23 @@ def main() -> None:
             _setting(args, config_values, "hf_filename"),
         )
     LOGGER.info("Resolved model path: %s", model_path)
+    if run_config_json:
+        write_run_config_json(
+            path=run_config_json,
+            input_jsonl=input_jsonl,
+            output_jsonl=output_jsonl,
+            debug_jsonl=debug_jsonl,
+            prompt_file=_setting(args, config_values, "prompt_file"),
+            config_file=args.config,
+            model_path=model_path,
+            model_source=model_source,
+            hf_repo=_setting(args, config_values, "hf_repo"),
+            hf_filename=_setting(args, config_values, "hf_filename"),
+            cache_dir=_setting(args, config_values, "cache_dir"),
+            model_name=_setting(args, config_values, "model_name", DEFAULT_MODEL_NAME),
+            generation_config=config,
+            max_docs=args.max_docs,
+        )
     runner = LlamaCppRunner(model_path=model_path, config=config)
     if debug_jsonl:
         initialize_debug_jsonl(debug_jsonl)

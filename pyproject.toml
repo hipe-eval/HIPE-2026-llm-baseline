@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hipe2026-mistral-baseline"
-version = "0.2.1"
+version = "0.2.2"
 description = "Minimal local prompt baseline for HIPE 2026 with llama-cpp-python."
 readme = "README.md"
 requires-python = ">=3.10"

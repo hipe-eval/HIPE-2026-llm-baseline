@@ -1,3 +1,32 @@
+# Release 0.2.2
+
+Patch release adding run configuration export and submission-ready output naming.
+
+## What Changed
+
+- increased default `max_tokens` from 256 to 512
+- added `--run-config-json` CLI argument to `run_baseline.py`; each run can now write a JSON file recording input/output paths, model source, resolved model path, and all generation settings
+- changed Makefile output naming to the shared-task submission format `<TEAM_NAME>_<input-stem>_run<RUN_NUMBER>.jsonl` (defaults: `TEAM_NAME=baseline`, `RUN_NUMBER=1`)
+- added `RUN_CONFIG_JSON` variable to the Makefile so run config files are written automatically alongside prediction files
+- updated `README.md` and `RELEASE_PROCESS.md` to reflect new output naming and config file conventions
+
+## Prompt and Model Behavior
+
+The prompt (`prompts/classify_pair.txt`) and model defaults are unchanged from 0.2.x, except for the raised `max_tokens` default.
+
+## Test Run Command
+
+```bash
+make world-test TEST_INPUT_DIR=data/test
+```
+
+This writes prediction files and run config files under `results-test.d/`, for example:
+
+```text
+results-test.d/baseline_HIPE-2026-v1.0-impresso-test-en_run1.jsonl
+results-test.d/baseline_HIPE-2026-v1.0-impresso-test-en_run1.config.json
+```
+
 # Release 0.2.1
 
 Patch release for running the unchanged 0.2.x baseline on the released test files.
